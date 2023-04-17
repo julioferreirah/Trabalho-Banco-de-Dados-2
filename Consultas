@@ -1,0 +1,57 @@
+Consulta 1:
+Descrição Textual:
+A consulta em questão deve mostrar os quartos ( seu hotel, número, categoria e preço) que  receberam a melhor avaliação de conforto de cada hotel, desconsiderando-o caso ele tenha recebido a pior avaliação de custo benefício do seu hotel
+
+Consulta SQL:
+
+(SELECT "Av"."nota_conforto", "H"."nome", "R"."numero", "Q"."id_categoria", "C"."preco"
+FROM "Avaliacao" as "Av", "Hotel" as "H", "Reserva" as "R", 
+	"Quarto" as "Q", "Categoria_Quarto" as "C"
+WHERE "Av"."id_hotel" = "H"."id_hotel" AND "Av"."id_hospede" = "R"."id_hospede" 
+	AND "Q"."id_hotel" = "R"."id_hotel" AND "Q"."numero" = "R"."numero" 
+	AND "C"."id_categoria" = "Q"."id_categoria"
+	AND ("Av"."id_hotel","Av"."nota_conforto") IN
+	(SELECT "A"."id_hotel",MAX("A"."nota_conforto")
+	FROM "Avaliacao" as "A"
+	GROUP BY "A"."id_hotel"))
+EXCEPT
+(SELECT "Av"."nota_custobeneficio", "H"."nome", "R"."numero", "Q"."id_categoria", "C"."preco"
+FROM "Avaliacao" as "Av", "Hotel" as "H", "Reserva" as "R", 
+	"Quarto" as "Q", "Categoria_Quarto" as "C"
+WHERE "Av"."id_hotel" = "H"."id_hotel" AND "Av"."id_hospede" = "R"."id_hospede" 
+	AND "Q"."id_hotel" = "R"."id_hotel" AND "Q"."numero" = "R"."numero" 
+	AND "C"."id_categoria" = "Q"."id_categoria"
+	AND ("Av"."id_hotel","Av"."nota_custobeneficio") IN
+	(SELECT "A"."id_hotel",MIN("A"."nota_custobeneficio")
+	FROM "Avaliacao" as "A"
+	GROUP BY "A"."id_hotel"))
+
+Algebra Linear:
+
+Consulta Interna do primeiro termo:
+Int1 ← γ id_hotel, MAX (nota_conforto)
+ ρ a avaliacao
+
+Consulta Interna do segundo termo:
+Int2 ← γ id_hotel, MAX (nota_custobeneficio)
+ ρ a avaliacao
+
+Consulta principal:
+(
+π av . nota_conforto, h . nome, r . numero, q . id_categoria, c . preco
+ σ av . id_hotel = h . id_hotel AND av . id_hospede = r . id_hospede AND q . id_hotel = r . id_hotel AND q . numero = r . numero AND c . id_categoria = q . id_categoria AND (av.id_hotel, av.nota_conforto) ∈ Int1
+  (ρ av avaliacao ×
+   ρ h hotel ×
+    ρ r reserva ×
+     ρ q quarto ×
+      ρ c categoria_quarto)
+) \
+	(
+π av . nota_custobeneficio, h . nome, r . numero, q . id_categoria, c . preco
+ σ av . id_hotel = h . id_hotel AND av . id_hospede = r . id_hospede AND q . id_hotel = r . id_hotel AND q . numero = r . numero AND c . id_categoria = q . id_categoria AND (av.id_hotel, av.nota_custobeneficio) ∈ Int2
+  (ρ av avaliacao ×
+   ρ h hotel ×
+    ρ r reserva ×
+     ρ q quarto ×
+      ρ c categoria_quarto)
+)
